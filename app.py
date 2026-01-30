@@ -11,24 +11,36 @@ PRECIO = 5
 
 st.set_page_config(page_title="Rifa Digital PRO SALUD", page_icon="🎟️")
 
-## ---------------- USUARIOS ----------------
 # ---------------- USUARIOS ----------------
 import streamlit as st
 
+# ---------------- USUARIOS ----------------
 try:
-    # Intenta leer desde Secrets (Streamlit Cloud)
     USUARIOS = st.secrets["USUARIOS"]
 except:
-    # Si no existe, estamos en local
     USUARIOS = {
-        "JEYNY CARMEN": "123@",       # Usuario y contraseña
-        "JAIME YARLEQUE": "123@",        # Cambia la contraseña si quieres
-        "YESSENIA CARMEN": "123@",
-        "AARON CARMEN": "123@",
-        "VIAINEY CARMEN": "123@", 
-        "INA GALLARDO": "123@",     # Nuevo usuario agregado
+        "JEYNYCARMEN": "123@",
+        "JAIMEYARLEQUE": "123@",
+        "YESSENIACARMEN": "123@",
+        "AARONCARMEN": "123@",
+        "VIAINEYCARMEN": "123@",
+        "INAGALLARDO": "123@",
+        "KARINARIVAS": "123@",
         "ADMIN": "admin123"
     }
+
+# Diccionario de nombres completos
+NOMBRES_COMPLETOS = {
+    "JEYNYCARMEN": "Jeyny Carmen",
+    "JAIMEYARLEQUE": "Jaime Yarleque",
+    "YESSENIACARMEN": "Yessenia Carmen",
+    "AARONCARMEN": "Aaron Carmen",
+    "VIAINEYCARMEN": "Viainey Carmen",
+    "INAGALLARDO": "Ina Gallardo",
+    "KARINARIVAS": "Karina Rivas",
+    "ADMIN": "Administrador"
+}
+
 
 
 # ---------------- PREMIOS ----------------
