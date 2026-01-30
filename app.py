@@ -21,7 +21,7 @@ except:
     USUARIOS = {
         "JEYNYCARMEN": "123@",
         "JAIMEYARLEQUE": "123@",
-        "YESSENIACARMEN": "123@",
+        "YESENIACARMEN": "123@",
         "AARONCARMEN": "123@",
         "VIAINEYCARMEN": "123@",
         "INAGALLARDO": "123@",
@@ -33,7 +33,7 @@ except:
 NOMBRES_COMPLETOS = {
     "JEYNYCARMEN": "Jeyny Carmen",
     "JAIMEYARLEQUE": "Jaime Yarleque",
-    "YESSENIACARMEN": "Yessenia Carmen",
+    "YESENIACARMEN": "Yesenia Carmen",
     "AARONCARMEN": "Aaron Carmen",
     "VIAINEYCARMEN": "Viainey Carmen",
     "INAGALLARDO": "Ina Gallardo",
