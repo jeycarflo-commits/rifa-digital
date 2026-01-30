@@ -11,12 +11,12 @@ PRECIO = 5
 
 st.set_page_config(page_title="Rifa Digital PRO SALUD", page_icon="🎟️")
 
-# ---------------- USUARIOS ----------------
-# ---------------- USUARIOS ----------------
+## ---------------- USUARIOS ----------------
+import streamlit as st
+
 # Leer usuarios desde Streamlit Secrets
 USUARIOS = st.secrets["USUARIOS"]
 
-}
 
 # ---------------- PREMIOS ----------------
 PREMIOS = [
