@@ -12,10 +12,23 @@ PRECIO = 5
 st.set_page_config(page_title="Rifa Digital PRO SALUD", page_icon="🎟️")
 
 ## ---------------- USUARIOS ----------------
+# ---------------- USUARIOS ----------------
 import streamlit as st
 
-# Leer usuarios desde Streamlit Secrets
-USUARIOS = st.secrets["USUARIOS"]
+try:
+    # Intenta leer desde Secrets (Streamlit Cloud)
+    USUARIOS = st.secrets["USUARIOS"]
+except:
+    # Si no existe, estamos en local
+    USUARIOS = {
+        "JEYNY CARMEN": "123@",       # Usuario y contraseña
+        "JAIME YARLEQUE": "123@",        # Cambia la contraseña si quieres
+        "YESSENIA CARMEN": "123@",
+        "AARON CARMEN": "123@",
+        "VIAINEY CARMEN": "123@", 
+        "INA GALLARDO": "123@",     # Nuevo usuario agregado
+        "ADMIN": "admin123"
+    }
 
 
 # ---------------- PREMIOS ----------------
