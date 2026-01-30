@@ -9,7 +9,7 @@ ARCHIVO = "rifa_data.xlsx"
 TOTAL = 500
 PRECIO = 5
 
-st.set_page_config(page_title="Rifa Digital", page_icon="🎟️")
+st.set_page_config(page_title="Rifa Digital PRO SALUD", page_icon="🎟️")
 
 # ---------------- USUARIOS ----------------
 load_dotenv()
