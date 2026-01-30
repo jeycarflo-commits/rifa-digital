@@ -34,7 +34,10 @@ for key, val in {
     "numero": None,
     "comprador": "",
     "dni": "",
-    "telefono": ""
+    "telefono": "",
+    "archivo_boleto": None,
+    "link_whatsapp": None,
+    "mostrar_boleto": False
 }.items():
     if key not in st.session_state:
         st.session_state[key] = val
@@ -42,10 +45,10 @@ for key, val in {
 # ---------------- DATA ----------------
 if "df" not in st.session_state:
     if os.path.exists(ARCHIVO):
-        st.session_state.df = pd.read_excel(ARCHIVO, dtype=str)
+        df = pd.read_excel(ARCHIVO, dtype=str)
     else:
         numeros = [str(i).zfill(3) for i in range(1, TOTAL + 1)]
-        st.session_state.df = pd.DataFrame({
+        df = pd.DataFrame({
             "Numero": numeros,
             "Estado": "Libre",
             "Vendedor": "",
@@ -53,7 +56,20 @@ if "df" not in st.session_state:
             "DNI": "",
             "Telefono": ""
         })
-        st.session_state.df.to_excel(ARCHIVO, index=False)
+        df.to_excel(ARCHIVO, index=False)
+
+    # 🔧 NORMALIZAR DATOS
+    df["Numero"] = df["Numero"].astype(str).str.zfill(3)
+    df["Vendedor"] = (
+        df["Vendedor"]
+        .fillna("")
+        .astype(str)
+        .str.strip()
+        .str.upper()
+    )
+
+    st.session_state.df = df
+
 
 # ---------------- BOLETO ----------------
 def crear_volante(numero, comprador, premios, archivo):
@@ -92,64 +108,90 @@ def login_page():
         if u in USUARIOS and USUARIOS[u] == pwd.strip():
             st.session_state.login = True
             st.session_state.vendedor = u
-            st.success(f"Bienvenido {u}")
-            st.experimental_rerun()
+            st.rerun()
         else:
             st.error("Usuario o contraseña incorrectos")
 
 # ---------------- VENTAS ----------------
 def ventas_page():
     st.title("🎟️ Registro de ventas")
-
-    vendedor = st.session_state.vendedor
+    vendedor = st.session_state.vendedor.strip().upper()
     df = st.session_state.df
 
+    # Números libres
     libres = df.query("Estado=='Libre'")["Numero"].tolist()
     if not libres:
         st.warning("No quedan números disponibles")
         return
 
-    if st.session_state.numero not in libres:
+    # Inicializar número si no existe
+    if "numero" not in st.session_state or st.session_state.numero not in libres:
         st.session_state.numero = libres[0]
 
-    numero = st.selectbox("Número", libres)
-    comprador = st.text_input("Comprador")
-    dni = st.text_input("DNI")
-    telefono = st.text_input("WhatsApp")
+    # Función para reiniciar campos al crear nueva venta
+    def reset_venta():
+        st.session_state.comprador = ""
+        st.session_state.dni = ""
+        st.session_state.telefono = ""
+        st.session_state.mostrar_boleto = False
+        if libres:
+            st.session_state.numero = libres[0]
 
-    if st.button("Registrar venta"):
+    # Selección de número y campos de comprador
+    numero = st.selectbox("Número", libres, key="numero")
+    comprador = st.text_input("Comprador", key="comprador")
+    dni = st.text_input("DNI", key="dni")
+    telefono = st.text_input("WhatsApp", key="telefono")
+
+    # Botones de acción
+    col1, col2 = st.columns(2)
+    with col1:
+        registrar = st.button("✅ Registrar venta")
+    with col2:
+        nueva = st.button("➕ Nueva venta", on_click=reset_venta)
+
+    # Registrar venta
+    if registrar:
         if not comprador or not dni or not telefono:
             st.error("Complete todos los campos")
-            return
+        else:
+            numero_fmt = str(numero).zfill(3)
 
-        df.loc[df["Numero"] == numero,
-               ["Estado", "Vendedor", "Comprador", "DNI", "Telefono"]] = \
-               ["Vendido", vendedor, comprador, dni, telefono]
+            df.loc[df["Numero"] == numero_fmt,
+                   ["Estado", "Vendedor", "Comprador", "DNI", "Telefono"]] = \
+                   ["Vendido", vendedor, comprador, dni, telefono]
 
-        df.to_excel(ARCHIVO, index=False)
+            df.to_excel(ARCHIVO, index=False)
+            st.session_state.df = df.copy()
 
-        archivo = crear_volante(
-            numero,
-            comprador,
-            PREMIOS,
-            f"boleto_{numero}.png"
-        )
+            archivo = crear_volante(
+                numero_fmt,
+                comprador,
+                PREMIOS,
+                f"boleto_{numero_fmt}.png"
+            )
 
-        st.image(archivo, width=700)
+            msg = f"Hola {comprador}, compraste el número {numero_fmt} de la rifa 🎟️. Aquí está tu boleto digital."
+            link = f"https://wa.me/{telefono}?text={msg.replace(' ', '%20')}"
 
-        msg = f"Hola {comprador}, compraste el número {numero} de la rifa 🎟️"
-        link = f"https://wa.me/{telefono}?text={msg.replace(' ', '%20')}"
-        st.markdown(f"[📲 Enviar WhatsApp]({link})")
+            st.session_state.archivo_boleto = archivo
+            st.session_state.link_whatsapp = link
+            st.session_state.mostrar_boleto = True
 
-        st.success("Venta registrada correctamente")
-        st.experimental_rerun()
+            st.success("Venta registrada correctamente")
+
+    # Mostrar boleto si corresponde
+    if st.session_state.mostrar_boleto:
+        st.image(st.session_state.archivo_boleto, width=700)
+        st.markdown(f"[📲 Enviar WhatsApp]({st.session_state.link_whatsapp})")
+
+
 
 # ---------------- MIS VENTAS ----------------
 def mis_ventas_page():
     st.header("📊 Mis ventas")
-
     df = st.session_state.df
-    usuario = st.session_state.vendedor
+    usuario = st.session_state.vendedor.strip().upper()
     vendidos = df.query("Estado=='Vendido'")
 
     if vendidos.empty:
@@ -172,25 +214,101 @@ def mis_ventas_page():
 # ---------------- ADMIN ----------------
 def admin_page():
     st.header("📊 Panel Admin")
+
     df = st.session_state.df
-    vendidos = df.query("Estado=='Vendido'")
+    vendidos = df[df["Estado"] == "Vendido"].copy()
+
+    # ====== RESUMEN ARRIBA ======
+    st.subheader("📊 Resumen por vendedor")
+
+    if vendidos.empty:
+        st.info("Aún no hay ventas registradas")
+    else:
+        resumen = (
+            vendidos
+            .groupby("Vendedor")
+            .size()
+            .reset_index(name="Numero")
+        )
+
+        resumen["Dinero"] = resumen["Numero"].astype(int) * PRECIO
+        resumen = resumen.sort_values(by="Numero", ascending=False)
+
+        st.dataframe(resumen, use_container_width=True)
+
+    st.divider()
+
+    # ====== MÉTRICAS ======
+    st.subheader("📈 Totales generales")
     st.metric("Vendidos", len(vendidos))
     st.metric("Total S/", len(vendidos) * PRECIO)
-    st.dataframe(vendidos)
+
+    # ====== TABLA COMPLETA ======
+    st.subheader("📋 Detalle de ventas")
+    st.dataframe(vendidos, use_container_width=True)
+
+  
+
+    # ====== BOTONES (NO SE TOCAN) ======
+
 
 # ---------------- NAVEGACIÓN ----------------
 if st.session_state.login:
     opciones = ["Ventas", "Mis ventas"]
-
     if st.session_state.vendedor == "ADMIN":
         opciones.append("Admin")
 
     page = st.sidebar.radio("Menú", opciones)
+    st.sidebar.divider()
 
-    if st.button("🔒 Cerrar sesión"):
+    # ===== BOTONES ADMIN =====
+    if st.session_state.vendedor == "ADMIN":
+
+        if st.sidebar.button("🔁 Actualizar ventas"):
+            df = pd.read_excel(ARCHIVO, dtype=str)
+
+            df["Numero"] = df["Numero"].astype(str).str.zfill(3)
+            df["Vendedor"] = (
+                df["Vendedor"]
+                .fillna("")
+                .astype(str)
+                .str.strip()
+                .str.upper()
+            )
+
+            st.session_state.df = df
+            st.success("Ventas actualizadas")
+            st.rerun()
+
+        if st.sidebar.button("🔄 Reiniciar rifa"):
+            numeros = [str(i).zfill(3) for i in range(1, TOTAL + 1)]
+            df_reset = pd.DataFrame({
+                "Numero": numeros,
+                "Estado": "Libre",
+                "Vendedor": "",
+                "Comprador": "",
+                "DNI": "",
+                "Telefono": ""
+            })
+            df_reset.to_excel(ARCHIVO, index=False)
+            st.session_state.df = df_reset
+            st.success("Rifa reiniciada correctamente")
+            st.rerun()
+
+        with open(ARCHIVO, "rb") as f:
+            st.sidebar.download_button(
+                "📤 Exportar Excel",
+                f,
+                file_name="rifa_data.xlsx"
+            )
+
+    st.sidebar.divider()
+
+    if st.sidebar.button("🔒 Cerrar sesión"):
         st.session_state.login = False
         st.session_state.vendedor = None
-        st.experimental_rerun()
+        st.session_state.mostrar_boleto = False
+        st.rerun()
 
     if page == "Ventas":
         ventas_page()
