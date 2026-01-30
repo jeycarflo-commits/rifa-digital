@@ -1,0 +1,25 @@
+# Archivos de Python compilados
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Archivos de configuración del IDE
+.vscode/
+.idea/
+
+# Archivos de Excel y datos de la rifa (no subir datos privados)
+rifa_data.xlsx
+
+# Logos e imágenes locales
+logo.png
+
+# Archivos de entorno con contraseñas
+.env
+
+# Archivos temporales de Streamlit
+.streamlit/
+
+# Archivos de sistema
+Thumbs.db
+.DS_Store
