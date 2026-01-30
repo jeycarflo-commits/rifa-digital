@@ -12,12 +12,10 @@ PRECIO = 5
 st.set_page_config(page_title="Rifa Digital PRO SALUD", page_icon="🎟️")
 
 # ---------------- USUARIOS ----------------
-load_dotenv()
+# ---------------- USUARIOS ----------------
+# Leer usuarios desde Streamlit Secrets
+USUARIOS = st.secrets["USUARIOS"]
 
-USUARIOS = {
-    key: os.getenv(key)
-    for key in ["JEYNY", "JAIME", "YESSENIA", "VIAINEY", "INA", "AARON", "ADMIN"]
-    if os.getenv(key)
 }
 
 # ---------------- PREMIOS ----------------
