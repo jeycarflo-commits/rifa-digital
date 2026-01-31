@@ -73,14 +73,23 @@ sh = client.open_by_key(sheet_id)
 
 @st.cache_resource
 def get_sheet():
-    creds_dict = st.secrets["gcp_service_account"]
-    creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPE)
-    client = gspread.authorize(creds)
+    try:
+        creds_dict = st.secrets["gcp_service_account"]
+        creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPE)
+        client = gspread.authorize(creds)
 
-    sheet_id = st.secrets.get("SHEET_ID", "1Sb8CQwE3zo8adi0hcpYlMLiIvrPFGEkyykdpLCAahmQ")
-    sh = client.open_by_key(sheet_id)
-    ws = sh.sheet1
-    return ws
+        sheet_id = st.secrets.get("SHEET_ID", "1Sb8CQwE3zo8adi0hcpYlMLiIvrPFGEkyykdpLCAahmQ")
+        if not sheet_id:
+            raise ValueError("SHEET_ID está vacío")
+
+        sh = client.open_by_key(sheet_id)
+        return sh.sheet1
+
+    except Exception as e:
+        # Esto hará que veas el error real en pantalla
+        st.error(f"❌ Error en get_sheet(): {type(e).__name__}: {e}")
+        raise
+
 
 
 
