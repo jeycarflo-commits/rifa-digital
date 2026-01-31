@@ -166,7 +166,7 @@ def ventas_page():
     st.markdown("### 💳 Número de Rifa")
     numero = st.selectbox("", libres, key="numero")
 
-    st.markdown("### 🕴️ Nombre Completo del Comprador")
+    st.markdown("### 👨‍💼 👩‍💼 Nombre Completo del Comprador")
     comprador = st.text_input("", key="comprador")
 
     st.markdown("### 🪪 DNI del Comprador")
