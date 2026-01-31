@@ -122,7 +122,7 @@ def crear_volante(numero, comprador, premios, archivo):
 
 # ---------------- LOGIN ----------------
 def login_page():
-    st.title("🔐 INGRESO VENDEDORES")
+    st.title("🔐 INGRESA EL PASSWORD DEL VENDEDORES")
     user = st.text_input("Usuario")
     pwd = st.text_input("Contraseña", type="password")
 
@@ -161,10 +161,10 @@ def ventas_page():
             st.session_state.numero = libres[0]
 
     # Selección de número y campos de comprador
-    numero = st.selectbox("Número", libres, key="numero")
-    comprador = st.text_input("Comprador", key="comprador")
+    numero = st.selectbox("Número de Rifa", libres, key="numero")
+    comprador = st.text_input("Nombres y Apellidos Completos del Comprador", key="comprador")
     dni = st.text_input("DNI", key="dni")
-    telefono = st.text_input("WhatsApp", key="telefono")
+    telefono = st.text_input("Numero de WhatsApp", key="telefono")
 
     # Botones de acción
     col1, col2 = st.columns(2)
