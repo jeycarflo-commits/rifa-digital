@@ -68,7 +68,9 @@ def get_sheet():
     client = gspread.authorize(creds)
     # Escribe en la primera hoja (sheet1). Si quieres otra pestaña,
     # cámbialo por: .worksheet("Ventas")
-    sh = client.open_by_key(st.secrets["SHEET_ID"])
+    sheet_id = st.secrets.get("SHEET_ID", "1Sb8CQwE3zo8adi0hcpYlMLiIvrPFGEkyykdpLCAahmQ")
+sh = client.open_by_key(sheet_id)
+)
     ws = sh.sheet1
     return ws
 
