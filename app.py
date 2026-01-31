@@ -1,13 +1,62 @@
 import streamlit as st
 import pandas as pd
 import os
+import gspread
+from google.oauth2.service_account import Credentials
 from PIL import Image, ImageDraw, ImageFont
 from dotenv import load_dotenv
+
+import gspread
+from google.oauth2.service_account import Credentials
+from io import BytesIO
+
 
 # ---------------- CONFIG ----------------
 ARCHIVO = "rifa_data.xlsx"
 TOTAL = 500
 PRECIO = 5
+
+# ---------------- GOOGLE SHEETS (PERSISTENCIA) ----------------
+SCOPE = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive"
+]
+
+@st.cache_resource
+def get_sheet():
+    creds_dict = st.secrets["gcp_service_account"]
+    creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPE)
+    client = gspread.authorize(creds)
+    return client.open_by_key(st.secrets["SHEET_ID"]).sheet1
+
+def sheet_to_df():
+    sheet = get_sheet()
+    values = sheet.get_all_values()
+
+    if not values or len(values) < 2:
+        return pd.DataFrame(
+            columns=["Numero","Estado","Vendedor","Comprador","DNI","Telefono"]
+        )
+
+    headers = values[0]
+    rows = values[1:]
+    df = pd.DataFrame(rows, columns=headers)
+
+    df["Numero"] = df["Numero"].astype(str).str.zfill(3)
+    df["Vendedor"] = df["Vendedor"].fillna("").str.upper().str.strip()
+    df["Estado"] = df["Estado"].fillna("")
+    df["Comprador"] = df["Comprador"].fillna("")
+    df["DNI"] = df["DNI"].fillna("")
+    df["Telefono"] = df["Telefono"].fillna("")
+
+    return df
+
+def reset_sheet():
+    sheet = get_sheet()
+    sheet.clear()
+    sheet.append_row(
+        ["Numero","Estado","Vendedor","Comprador","DNI","Telefono"]
+    )
 
 st.set_page_config(page_title="Rifa Digital PRO SALUD", page_icon="🎟️")
 
@@ -67,31 +116,12 @@ for key, val in {
 
 # ---------------- DATA ----------------
 if "df" not in st.session_state:
-    if os.path.exists(ARCHIVO):
-        df = pd.read_excel(ARCHIVO, dtype=str)
-    else:
-        numeros = [str(i).zfill(3) for i in range(1, TOTAL + 1)]
-        df = pd.DataFrame({
-            "Numero": numeros,
-            "Estado": "Libre",
-            "Vendedor": "",
-            "Comprador": "",
-            "DNI": "",
-            "Telefono": ""
-        })
-        df.to_excel(ARCHIVO, index=False)
+    try:
+        st.session_state.df = sheet_to_df()
+    except Exception as e:
+        st.error(f"Error conectando a Google Sheets: {e}")
+        st.stop()
 
-    # 🔧 NORMALIZAR DATOS
-    df["Numero"] = df["Numero"].astype(str).str.zfill(3)
-    df["Vendedor"] = (
-        df["Vendedor"]
-        .fillna("")
-        .astype(str)
-        .str.strip()
-        .str.upper()
-    )
-
-    st.session_state.df = df
 
 
 # ---------------- BOLETO ----------------
@@ -191,12 +221,18 @@ def ventas_page():
         else:
             numero_fmt = str(numero).zfill(3)
 
-            df.loc[df["Numero"] == numero_fmt,
-                   ["Estado", "Vendedor", "Comprador", "DNI", "Telefono"]] = \
-                   ["Vendido", vendedor, comprador, dni, telefono]
+            sheet = get_sheet()
+sheet.append_row([
+    numero_fmt,
+    "Vendido",
+    vendedor,
+    comprador,
+    dni,
+    telefono
+])
 
-            df.to_excel(ARCHIVO, index=False)
-            st.session_state.df = df.copy()
+st.session_state.df = sheet_to_df()
+
 
             archivo = crear_volante(
                 numero_fmt,
@@ -223,6 +259,18 @@ def ventas_page():
 
 # ---------------- MIS VENTAS ----------------
 def mis_ventas_page():
+    ##################################################
+    st.write("✅ Probando conexión con Google Sheets...")
+try:
+    sheet = get_sheet()
+    st.write("Conectado a:", sheet.spreadsheet.title)
+    st.write("Hoja:", sheet.title)
+    st.write("Filas actuales:", sheet.row_count)
+except Exception as e:
+    st.error(f"❌ No conecta a Google Sheets: {e}")
+    st.stop()
+##############################################
+    
     st.header("📊 Mis ventas")
     df = st.session_state.df
     usuario = st.session_state.vendedor.strip().upper()
@@ -324,17 +372,26 @@ if st.session_state.login:
                 "DNI": "",
                 "Telefono": ""
             })
-            df_reset.to_excel(ARCHIVO, index=False)
-            st.session_state.df = df_reset
+            reset_sheet()
+st.session_state.df = sheet_to_df()
+st.success("Rifa reiniciada correctamente (Google Sheets)")
+st.rerun()
+
             st.success("Rifa reiniciada correctamente")
             st.rerun()
 
-        with open(ARCHIVO, "rb") as f:
-            st.sidebar.download_button(
-                "📤 Exportar Excel",
-                f,
-                file_name="rifa_data.xlsx"
-            )
+        df_export = sheet_to_df()
+buffer = BytesIO()
+df_export.to_excel(buffer, index=False)
+buffer.seek(0)
+
+st.sidebar.download_button(
+    "📤 Exportar Excel",
+    buffer,
+    file_name="rifa_data.xlsx",
+    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+)
+
 
     st.sidebar.divider()
 
