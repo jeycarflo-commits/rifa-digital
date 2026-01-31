@@ -70,7 +70,7 @@ def get_sheet():
     # cámbialo por: .worksheet("Ventas")
     sheet_id = st.secrets.get("SHEET_ID", "1Sb8CQwE3zo8adi0hcpYlMLiIvrPFGEkyykdpLCAahmQ")
 sh = client.open_by_key(sheet_id)
-)
+
     ws = sh.sheet1
     return ws
 
