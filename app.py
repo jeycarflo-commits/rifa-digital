@@ -137,6 +137,8 @@ def login_page():
 
 # ---------------- VENTAS ----------------
 def ventas_page():
+    st.success("## 💙 “Hoy no solo compras un número, hoy ayudas a cuidar una vida.")
+
     st.title("🎟️ Registro de ventas")
     vendedor = st.session_state.vendedor.strip().upper()
     df = st.session_state.df
@@ -161,10 +163,19 @@ def ventas_page():
             st.session_state.numero = libres[0]
 
     # Selección de número y campos de comprador
-    numero = st.selectbox("Número de Rifa", libres, key="numero")
-    comprador = st.text_input("Nombres y Apellidos Completos del Comprador", key="comprador")
-    dni = st.text_input("DNI", key="dni")
-    telefono = st.text_input("Numero de WhatsApp", key="telefono")
+    st.markdown("### 💳 Número de Rifa")
+    numero = st.selectbox("", libres, key="numero")
+
+    st.markdown("### 🕴️ Nombre Completo del Comprador")
+    comprador = st.text_input("", key="comprador")
+
+    st.markdown("### 🪪 DNI del Comprador")
+    dni = st.text_input("", key="dni")
+
+    st.markdown("### 📱 Número de WhatsApp")
+    telefono = st.text_input("", key="telefono")
+
+
 
     # Botones de acción
     col1, col2 = st.columns(2)
