@@ -29,6 +29,7 @@ except Exception:
         "VIAINEYCARMEN": "123@",
         "INAGALLARDO": "123@",
         "KARINARIVAS": "123@",
+        "ANGELOYARLEQUE": "123@",
         "ADMIN": "admin123",
     }
 

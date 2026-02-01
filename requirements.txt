@@ -3,6 +3,5 @@ pandas
 Pillow
 openpyxl
 python-dotenv
-
 gspread
 google-auth
