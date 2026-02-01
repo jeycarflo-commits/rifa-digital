@@ -214,8 +214,23 @@ def login_page():
 
 # ---------------- VENTAS ----------------
 def ventas_page():
+    import tempfile
+
+    # Defaults seguros (antes de los widgets)
+    for k, v in {
+        "numero": None,
+        "comprador_input": "",
+        "dni_input": "",
+        "telefono_input": "",
+        "mostrar_boleto": False,
+        "archivo_boleto": None,
+        "link_whatsapp": None,
+    }.items():
+        if k not in st.session_state:
+            st.session_state[k] = v
+
     st.markdown("## 💙 Rifa Pro Salud")
-    st.markdown("#### Hoy no solo compras un número, hoy ayudas a cuidar una vida.")
+    st.success("### 💙 “Hoy no solo compras un número, hoy ayudas a cuidar una vida.")
     st.title("🎟️ Registro de ventas")
 
     vendedor = (st.session_state.vendedor or "").strip().upper()
@@ -234,14 +249,18 @@ def ventas_page():
         st.warning("No quedan números disponibles")
         return
 
+    def clear_inputs():
+        st.session_state.comprador_input = ""
+        st.session_state.dni_input = ""
+        st.session_state.telefono_input = ""
+
     def reset_venta():
-        st.session_state.comprador = ""
-        st.session_state.dni = ""
-        st.session_state.telefono = ""
+        clear_inputs()
         st.session_state.mostrar_boleto = False
         st.session_state.archivo_boleto = None
         st.session_state.link_whatsapp = None
-        st.session_state.numero = libres[0] if libres else None
+        # No uses `libres` dentro del callback (puede quedar desactualizado)
+        st.session_state.numero = None
 
     # Si el número actual no está disponible, asigna el primero libre
     if st.session_state.numero not in libres:
@@ -251,13 +270,13 @@ def ventas_page():
     numero = st.selectbox("", libres, key="numero")
 
     st.markdown("#### 👨‍💼 = 👩‍💼 Nombre completo del comprador")
-    comprador = st.text_input("", key="comprador")
+    comprador = st.text_input("", key="comprador_input")
 
     st.markdown("#### 🪪 DNI del comprador")
-    dni = st.text_input("", key="dni")
+    dni = st.text_input("", key="dni_input")
 
     st.markdown("#### 📱 Número de WhatsApp")
-    telefono = st.text_input("", key="telefono", help="Ejemplo: 999888777 o 51999888777")
+    telefono = st.text_input("", key="telefono_input", help="Ejemplo: 999888777 o 51999888777")
 
     col1, col2 = st.columns(2)
     with col1:
@@ -291,8 +310,9 @@ def ventas_page():
             # Refrescar DF para que el número desaparezca de libres
             refresh_df()
 
-            # Generar boleto (en cloud es temporal, pero sirve para ver/descargar)
-            archivo = crear_volante(numero_fmt, comprador, PREMIOS, f"boleto_{numero_fmt}.png")
+            # Generar boleto (temporal pero descargable)
+            ruta_png = os.path.join(tempfile.gettempdir(), f"boleto_{numero_fmt}.png")
+            archivo = crear_volante(numero_fmt, comprador, PREMIOS, ruta_png)
 
             msg = f"Hola {comprador}, compraste el número {numero_fmt} de la rifa 🎟️. Aquí está tu boleto digital."
             link = f"https://wa.me/{telefono_wa}?text={quote(msg)}"
@@ -302,10 +322,9 @@ def ventas_page():
             st.session_state.mostrar_boleto = True
 
             st.success("✅ Venta registrada correctamente (guardada en Google Sheets).")
-            # Limpieza de campos para siguiente venta
-            st.session_state.comprador = ""
-            st.session_state.dni = ""
-            st.session_state.telefono = ""
+
+            # Limpieza de campos (ahora sí, sin romper Streamlit)
+            clear_inputs()
 
             st.rerun()
 
@@ -325,6 +344,7 @@ def ventas_page():
                 )
         except Exception:
             pass
+
 
 
 # ---------------- MIS VENTAS ----------------
