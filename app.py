@@ -293,9 +293,9 @@ def ventas_page():
         # Link WhatsApp (sin boleto)
         #msg = f"Hola {comprador}, compraste el número {numero_fmt} de la rifa 🎟️. ¡Gracias por tu apoyo!"
         msg = (
-    f"Hola {comprador} 👋\n\n"
+    f"*Hola* {comprador} 👋\n\n"
     f"✅ Tu compra fue registrada Correctamente.\n"
-    f"*🎟️ Tú Número de la Rifa Es: {numero_fmt}\n*"
+    f"🎟️ Tú Número de la Rifa Es: *{numero_fmt}*\n*"
     f"👤 del Vendedor: {nombre_vendedor}\n\n"
     f"*💙 “Hoy no solo compras un número, hoy ayudas a cuidar una vida.”*\n\n"
     f"🙏 ¡Gracias por apoyar la Rifa Pro Salud!\n"
