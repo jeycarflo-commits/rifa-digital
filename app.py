@@ -6,7 +6,6 @@ from urllib.parse import quote
 
 import gspread
 from google.oauth2.service_account import Credentials
-from PIL import Image, ImageDraw, ImageFont
 
 # ---------------- CONFIG ----------------
 TOTAL = 500
@@ -162,30 +161,7 @@ if st.session_state.df is None:
 
 
 # ---------------- BOLETO ----------------
-def crear_volante(numero: str, comprador: str, premios: list[str], archivo: str) -> str:
-    img = Image.new("RGB", (700, 400), (255, 245, 230))
-    d = ImageDraw.Draw(img)
 
-    try:
-        ft = ImageFont.truetype("arialbd.ttf", 45)
-        fn = ImageFont.truetype("arialbd.ttf", 50)
-        fs = ImageFont.truetype("arial.ttf", 22)
-    except Exception:
-        ft = fn = fs = ImageFont.load_default()
-
-    d.rectangle([10, 10, 690, 390], outline="orange", width=5)
-    d.text((350, 30), "🎟️ BOLETO DE RIFA 🎟️", fill="darkblue", font=ft, anchor="ms")
-    d.text((350, 100), f"Número: {numero}", fill="red", font=fn, anchor="ms")
-    d.text((50, 180), f"Comprador: {comprador}", fill="black", font=fs)
-    d.text((50, 220), "Premios:", fill="green", font=fs)
-
-    y = 250
-    for p in premios:
-        d.text((70, y), f"- {p}", fill="darkgreen", font=fs)
-        y += 30
-
-    img.save(archivo)
-    return archivo
 
 
 def format_phone_for_wa(raw: str) -> str:
@@ -212,22 +188,27 @@ def login_page():
             st.error("Usuario o contraseña incorrectos")
 
 
-# ---------------- VENTAS ----------------
+# ---------------- VENTAS (SIN BOLETO) ----------------
 def ventas_page():
-    import tempfile
-
-    # Defaults seguros (antes de los widgets)
+    # Defaults seguros
     for k, v in {
         "numero": None,
         "comprador_input": "",
         "dni_input": "",
         "telefono_input": "",
-        "mostrar_boleto": False,
-        "archivo_boleto": None,
-        "link_whatsapp": None,
+        "_clear_inputs_next_run": False,
+        "last_whatsapp_link": None,
+        "last_success_msg": None,
     }.items():
         if k not in st.session_state:
             st.session_state[k] = v
+
+    # ✅ Limpieza programada (ANTES de crear widgets) - evita StreamlitAPIException
+    if st.session_state.get("_clear_inputs_next_run", False):
+        st.session_state["comprador_input"] = ""
+        st.session_state["dni_input"] = ""
+        st.session_state["telefono_input"] = ""
+        st.session_state["_clear_inputs_next_run"] = False
 
     st.markdown("## 💙 Rifa Pro Salud")
     st.success("### 💙 “Hoy no solo compras un número, hoy ayudas a cuidar una vida.")
@@ -236,6 +217,12 @@ def ventas_page():
     vendedor = (st.session_state.vendedor or "").strip().upper()
     nombre_vendedor = NOMBRES_COMPLETOS.get(vendedor, vendedor)
     st.caption(f"Conectado como: **{nombre_vendedor}**")
+
+    # Mostrar el último resultado (si existe)
+    if st.session_state.last_success_msg:
+        st.success(st.session_state.last_success_msg)
+    if st.session_state.last_whatsapp_link:
+        st.markdown(f"[📲 Enviar WhatsApp]({st.session_state.last_whatsapp_link})")
 
     # Refrescar ventas del sheet
     df = sheet_to_df()
@@ -249,18 +236,11 @@ def ventas_page():
         st.warning("No quedan números disponibles")
         return
 
-    def clear_inputs():
-        st.session_state.comprador_input = ""
-        st.session_state.dni_input = ""
-        st.session_state.telefono_input = ""
-
     def reset_venta():
-        clear_inputs()
-        st.session_state.mostrar_boleto = False
-        st.session_state.archivo_boleto = None
-        st.session_state.link_whatsapp = None
-        # No uses `libres` dentro del callback (puede quedar desactualizado)
-        st.session_state.numero = None
+        st.session_state["_clear_inputs_next_run"] = True
+        st.session_state.last_whatsapp_link = None
+        st.session_state.last_success_msg = None
+        st.session_state.numero = None  # que elija el primero libre en el siguiente render
 
     # Si el número actual no está disponible, asigna el primero libre
     if st.session_state.numero not in libres:
@@ -291,42 +271,36 @@ def ventas_page():
 
         if not comprador or not dni or not telefono:
             st.error("Complete todos los campos.")
-        else:
-            numero_fmt = str(numero).zfill(3)
-            telefono_wa = format_phone_for_wa(telefono)
+            return
 
-            # Validación mínima
-            if len(telefono_wa) < 9:
-                st.error("Ingrese un número de teléfono válido (solo dígitos).")
-                return
+        numero_fmt = str(numero).zfill(3)
+        telefono_wa = format_phone_for_wa(telefono)
 
-            try:
-                ws = get_sheet()
-                ws.append_row([numero_fmt, "Vendido", vendedor, comprador, dni, telefono])
-            except Exception as e:
-                st.error(f"❌ No se pudo guardar en Google Sheets: {e}")
-                st.stop()
+        if len(telefono_wa) < 9:
+            st.error("Ingrese un número de teléfono válido (solo dígitos).")
+            return
 
-            # Refrescar DF para que el número desaparezca de libres
-            refresh_df()
+        try:
+            ws = get_sheet()
+            ws.append_row([numero_fmt, "Vendido", vendedor, comprador, dni, telefono])
+        except Exception as e:
+            st.error(f"❌ No se pudo guardar en Google Sheets: {e}")
+            st.stop()
 
-            # Generar boleto (temporal pero descargable)
-            ruta_png = os.path.join(tempfile.gettempdir(), f"boleto_{numero_fmt}.png")
-            archivo = crear_volante(numero_fmt, comprador, PREMIOS, ruta_png)
+        # Refrescar DF para que el número desaparezca de libres
+        refresh_df()
 
-            msg = f"Hola {comprador}, compraste el número {numero_fmt} de la rifa 🎟️. Aquí está tu boleto digital."
-            link = f"https://wa.me/{telefono_wa}?text={quote(msg)}"
+        # Link WhatsApp (sin boleto)
+        msg = f"Hola {comprador}, compraste el número {numero_fmt} de la rifa 🎟️. ¡Gracias por tu apoyo!"
+        link = f"https://wa.me/{telefono_wa}?text={quote(msg)}"
 
-            st.session_state.archivo_boleto = archivo
-            st.session_state.link_whatsapp = link
-            st.session_state.mostrar_boleto = True
+        st.session_state.last_success_msg = f"✅ Venta registrada: N° {numero_fmt} - {comprador}"
+        st.session_state.last_whatsapp_link = link
 
-            st.success("✅ Venta registrada correctamente (guardada en Google Sheets).")
+        # Limpia inputs en el siguiente render
+        st.session_state["_clear_inputs_next_run"] = True
+        st.rerun()
 
-            # Limpieza de campos (ahora sí, sin romper Streamlit)
-            clear_inputs()
-
-            st.rerun()
 
     if st.session_state.mostrar_boleto and st.session_state.archivo_boleto:
         st.image(st.session_state.archivo_boleto, width=700)
