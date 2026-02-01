@@ -40,6 +40,7 @@ NOMBRES_COMPLETOS = {
     "VIAINEYCARMEN": "Viainey Carmen",
     "INAGALLARDO": "Ina Gallardo",
     "KARINARIVAS": "Karina Rivas",
+    "ANGELOYARLEQUE": "Angelo Yarleque",
     "ADMIN": "Administrador",
 }
 
