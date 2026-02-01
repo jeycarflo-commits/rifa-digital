@@ -247,13 +247,13 @@ def ventas_page():
     if st.session_state.numero not in libres:
         st.session_state.numero = libres[0]
 
-    st.markdown("#### 🎟️ Número de rifa")
+    st.markdown("#### 🏷️ Número de rifa")
     numero = st.selectbox("", libres, key="numero")
 
-    st.markdown("#### 👤 Nombre completo del comprador")
+    st.markdown("#### 👨‍💼 = 👩‍💼 Nombre completo del comprador")
     comprador = st.text_input("", key="comprador")
 
-    st.markdown("#### 🆔 DNI del comprador")
+    st.markdown("#### 🪪 DNI del comprador")
     dni = st.text_input("", key="dni")
 
     st.markdown("#### 📱 Número de WhatsApp")
