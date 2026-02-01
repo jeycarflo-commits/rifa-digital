@@ -174,7 +174,7 @@ def format_phone_for_wa(raw: str) -> str:
 
 # ---------------- LOGIN ----------------
 def login_page():
-    st.title("🔐 Ingreso vendedores")
+    st.title("🔐 Ingresa Tus Credenciales de Vendedor")
     user = st.text_input("Usuario")
     pwd = st.text_input("Contraseña", type="password")
 
